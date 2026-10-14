@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b3d66">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="澳車位">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="icon" href="icon.png">
+  <title>澳門停車場即時車位</title>
+<style>
+:root{--primary:#0b3d66;--primary-deep:#082b47;--accent:#ff8a3d;--bg:#f2f5f9;--card:#fff;--text:#1c2b3a;--muted:#7b8aa0;--ok:#1e9e6a;--warn:#e08c00;--full:#d64545;--radius:16px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:-apple-system,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;background:var(--bg);color:var(--text)}
+.view{min-height:100%}.hidden{display:none!important}
+#view-login{display:flex;align-items:center;justify-content:center;padding:24px;min-height:100vh;background:linear-gradient(160deg,var(--primary-deep) 0%,var(--primary) 55%,#14618f 100%)}
+.login-card{width:100%;max-width:360px;background:rgba(255,255,255,.97);border-radius:24px;padding:40px 32px 36px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.login-logo{width:72px;height:72px;margin:0 auto 18px;border-radius:20px;background:var(--primary);color:#fff;font-size:42px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.login-card h1{font-size:26px;line-height:1.3;letter-spacing:1px}
+.login-sub{color:var(--muted);font-size:13px;margin:10px 0 26px}
+#code-input{width:100%;padding:14px 16px;border:2px solid #dde5ee;border-radius:12px;font-size:16px;text-align:center;letter-spacing:4px;outline:none}
+#code-input:focus{border-color:var(--primary)}
+.btn-primary{width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;background:var(--primary);color:#fff;font-size:17px;font-weight:600;letter-spacing:6px;cursor:pointer}
+.btn-primary:active{background:var(--primary-deep)}
+.login-error{color:var(--full);font-size:13px;margin-top:12px}
+.app-header{position:sticky;top:0;z-index:10;background:linear-gradient(150deg,var(--primary-deep),var(--primary));color:#fff;padding:calc(env(safe-area-inset-top, 0px) + 18px) 20px 14px}
+.app-header h1{font-size:19px;letter-spacing:1px}
+.table-header{display:flex;align-items:center;gap:12px}
+.table-header h2{font-size:19px}
+.back-btn,.refresh-btn{border:none;background:rgba(255,255,255,.14);color:#fff;border-radius:10px;width:34px;height:34px;font-size:17px;cursor:pointer}
+.refresh-btn{font-size:18px}
+.refresh-btn.spin{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status-line{display:flex;align-items:center;justify-content:space-between;margin-top:6px;font-size:12px;color:rgba(255,255,255,.75)}
+.region-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:22px 18px 10px}
+.region-card{background:var(--card);border:none;border-radius:var(--radius);padding:22px 18px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;cursor:pointer;box-shadow:0 4px 16px rgba(11,61,102,.08);transition:transform .12s}
+.region-card:nth-child(3){grid-column:span 2;align-items:center}
+.region-card:active{transform:scale(.97)}
+.region-name{font-size:24px;font-weight:700;color:var(--primary)}
+.region-en{font-size:10px;letter-spacing:2px;color:var(--muted)}
+.region-count{font-size:30px;font-weight:800;color:var(--accent);margin-top:6px}
+.region-unit{font-size:12px;color:var(--muted)}
+.unknown-note{margin:12px 18px 0;padding:10px 14px;background:#fff7ea;border:1px solid #f3ddb8;border-radius:10px;font-size:13px;color:#8a6420}
+.unknown-note a{color:var(--accent)}
+.app-footer{display:flex;flex-direction:column;gap:8px;align-items:center;padding:26px 16px 34px;color:var(--muted);font-size:12px}
+#logout-link{color:var(--muted);text-decoration:underline;cursor:pointer}
+.table-wrap{padding:16px 14px 30px}
+.park-table{width:100%;border-collapse:separate;border-spacing:0 8px}
+.park-table thead th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:0 14px 2px}
+.park-table th.num-col{text-align:right}
+.park-table td{background:var(--card);padding:13px 14px;vertical-align:middle;font-size:15px}
+.park-table td:first-child{border-radius:12px 0 0 12px}
+.park-table td:last-child{border-radius:0 12px 12px 0;text-align:right}
+tr.park-row.maint td{background:#eef1f5;color:#9aa7b5}
+.park-name{line-height:1.35}
+.park-en{display:block;font-size:10px;color:var(--muted);margin-top:2px;white-space:normal}
+.badge{display:inline-block;min-width:52px;padding:5px 10px;border-radius:999px;font-size:15px;font-weight:700;color:#fff;text-align:center}
+.badge.ok{background:var(--ok)}.badge.warn{background:var(--warn)}.badge.full{background:var(--full)}.badge.none{background:#b8c4d0}
+.badge.maint{background:#98a5b3;font-size:13px;font-weight:600}
+.table-note{padding:12px 14px;color:var(--muted);font-size:12px}
+.toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(20,30,44,.92);color:#fff;padding:10px 20px;border-radius:999px;font-size:14px;z-index:100;max-width:86vw}
+</style>
+</head>
+<body>
+  <!-- 登录闸门 -->
+  <section id="view-login" class="view">
+    <div class="login-card">
+      <div class="login-logo">P</div>
+      <h1>澳門停車場<br>即時車位</h1>
+      <p class="login-sub">私家車剩餘車位查詢 · 家人專用</p>
+      <input id="code-input" type="password" placeholder="請輸入存取密碼" autocomplete="off">
+      <button id="login-btn" class="btn-primary">進 入</button>
+      <p id="login-error" class="login-error hidden">密碼不正確，請重試</p>
+    </div>
+  </section>
+
+  <!-- 区域选择 -->
+  <section id="view-regions" class="view hidden">
+    <header class="app-header">
+      <h1>澳門停車場即時車位</h1>
+      <div class="status-line">
+        <span id="update-status">載入中…</span>
+        <button id="refresh-btn" class="refresh-btn" title="立即更新">⟳</button>
+      </div>
+    </header>
+    <main class="region-grid">
+      <button class="region-card" data-region="macau">
+        <span class="region-name">澳門</span>
+        <span class="region-en">MACAU PENINSULA</span>
+        <span class="region-count" id="count-macau">—</span>
+        <span class="region-unit">個停車場</span>
+      </button>
+      <button class="region-card" data-region="taipa">
+        <span class="region-name">氹仔</span>
+        <span class="region-en">TAIPA</span>
+        <span class="region-count" id="count-taipa">—</span>
+        <span class="region-unit">個停車場</span>
+      </button>
+      <button class="region-card" data-region="coloane">
+        <span class="region-name">路環</span>
+        <span class="region-en">COLOANE</span>
+        <span class="region-count" id="count-coloane">—</span>
+        <span class="region-unit">個停車場</span>
+      </button>
+    </main>
+    <div id="unknown-note" class="unknown-note hidden">
+      另有 <b id="unknown-count">0</b> 個未分類停車場（政府新增場館），
+      <a href="#" id="unknown-link">查看</a>
+    </div>
+    <footer class="app-footer">
+      <span id="logout-link">登出</span>
+      <span class="footer-src">資料來源：澳門特區政府數據開放平台</span>
+    </footer>
+  </section>
+
+  <!-- 车位表格 -->
+  <section id="view-table" class="view hidden">
+    <header class="app-header">
+      <div class="table-header">
+        <button id="back-btn" class="back-btn">←</button>
+        <h2 id="table-title">澳門</h2>
+      </div>
+      <div class="status-line"><span id="table-status"></span></div>
+    </header>
+    <main class="table-wrap">
+      <table class="park-table">
+        <thead><tr><th>停車場名稱</th><th class="num-col">私家車車位</th></tr></thead>
+        <tbody id="park-rows"></tbody>
+      </table>
+      <p class="table-note">按剩餘車位由多至少排序；「暫停發佈」表示該場館停用車位顯示。</p>
+    </main>
+  </section>
+
+  <div id="toast" class="toast hidden"></div>
+
+<script>
+'use strict';
+/* ===== 配置（APPCODE 为政府开放数据平台公开密钥） ===== */
+const APPCODE = '09d43a591fba407fb862412970667de4';
+const API_URL = 'https://dsat.apigateway.data.gov.mo/car_park_maintance';
+const ACCESS_CODE = 'moka2026';
+const CACHE_KEY = 'mp_data_v1';
+const CODE_KEY = 'mp_access_code';
+const REFRESH_MS = 60 * 1000;
+
+/* ===== 停车场ID → 区域对照（政府API不提供区域，人工维护） =====
+   macau=澳門半島, taipa=氹仔(含路氹城), coloane=路環(含石排灣) */
+const REGIONS = {
+  "6045":"macau","6033":"macau","7095":"macau","6022":"macau","6026":"macau",
+  "6041":"macau","7051":"macau","7067":"macau","6028":"macau","7090":"macau",
+  "7097":"macau","7093":"macau","7082":"macau","6005":"macau","7072":"macau",
+  "7073":"macau","7063":"macau","7050":"macau","7055":"macau","7057":"macau",
+  "6038":"macau","6009":"macau","6020":"macau","6034":"macau","7065":"macau",
+  "7098":"macau","6001":"macau","7064":"macau","7059":"macau","7100":"macau",
+  "7101":"macau","7083":"macau","7084":"macau","7087":"macau","7088":"macau",
+  "7096":"macau","7099":"macau","6043":"macau","7062":"macau","6010":"macau",
+  "6008":"macau","7074":"macau","6042":"macau","6011":"macau","6012":"macau",
+  "6002":"macau","6003":"macau","6024":"macau","6023":"macau","6027":"macau",
+  "6037":"macau","6006":"macau","6014":"macau","7075":"macau","7061":"macau",
+  "7094":"macau","7071":"macau","7086":"macau","7066":"macau","7068":"macau",
+  "6007":"macau","6025":"macau","7070":"macau","6004":"macau","6013":"macau",
+  "7060":"macau",
+  "6018":"taipa","7044":"taipa","7076":"taipa","7077":"taipa","6029":"taipa",
+  "6032":"taipa","7081":"taipa","7078":"taipa","7079":"taipa","7056":"taipa",
+  "7054":"taipa","7085":"taipa","6015":"taipa","7069":"taipa","7091":"taipa",
+  "7092":"taipa","7052":"taipa","7053":"taipa",
+  "7089":"coloane","6030":"coloane","6019":"coloane","6035":"coloane",
+  "6039":"coloane","6040":"coloane","7058":"coloane","6031":"coloane"
+};
+const REGION_NAMES = { macau: '澳門', taipa: '氹仔', coloane: '路環', unknown: '未分類' };
+
+const $ = (id) => document.getElementById(id);
+let currentView = null, currentRegion = null, latestData = null, refreshTimer = null;
+
+function showView(name) {
+  for (const v of ['view-login', 'view-regions', 'view-table']) $(v).classList.add('hidden');
+  $(name).classList.remove('hidden');
+  currentView = name;
+  window.scrollTo(0, 0);
+}
+
+/* ---------- 数据获取（政府API直达 + 手机本地60秒缓存） ---------- */
+function parseXml(xmlText) {
+  const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+  if (doc.querySelector('parsererror')) throw new Error('xml-parse-error');
+  return [...doc.querySelectorAll('Car_park_info')].map((el) => {
+    const carRaw = el.getAttribute('Car_CNT');
+    const id = el.getAttribute('ID');
+    return {
+      id,
+      name: (el.getAttribute('name') || '').trim(),
+      en: (el.getAttribute('CP_EName') || '').trim(),
+      car: carRaw === null || carRaw === '' ? null : Number(carRaw),
+      maintenance: el.getAttribute('maintenance') === '1',
+      region: REGIONS[id] || null,
+    };
+  });
+}
+
+async function fetchParks() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (cached && Date.now() - cached.fetchedAt < REFRESH_MS) return cached;
+  } catch (e) {}
+  const res = await fetch(API_URL, { headers: { Authorization: 'APPCODE ' + APPCODE }, cache: 'no-store' });
+  if (!res.ok) throw new Error('api-' + res.status);
+  const parks = parseXml(await res.text());
+  latestData = { fetchedAt: Date.now(), parks };
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(latestData)); } catch (e) {}
+  return latestData;
+}
+
+function fmtTime(ts) {
+  try { return new Date(ts).toLocaleTimeString('zh-TW', { hour12: false }); } catch { return ''; }
+}
+/* ---------- 渲染：区域选择 ---------- */
+function renderRegions() {
+  const parks = latestData.parks;
+  for (const key of ['macau', 'taipa', 'coloane']) {
+    $('count-' + key).textContent =
+      parks.filter((p) => p.region === key && !p.maintenance && p.car !== null).length;
+  }
+  const unknown = parks.filter((p) => !p.region).length;
+  $('unknown-note').classList.toggle('hidden', unknown === 0);
+  $('unknown-count').textContent = unknown;
+  $('update-status').textContent = '更新於 ' + fmtTime(latestData.fetchedAt);
+}
+
+/* ---------- 渲染：车位表格 ---------- */
+function badgeFor(p) {
+  if (p.maintenance) return '<span class="badge maint">暫停發佈</span>';
+  if (p.car === null || isNaN(p.car)) return '<span class="badge none">—</span>';
+  if (p.car === 0) return '<span class="badge full">滿</span>';
+  if (p.car <= 20) return '<span class="badge warn">' + p.car + '</span>';
+  return '<span class="badge ok">' + p.car + '</span>';
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
+function renderTable() {
+  $('table-title').textContent = REGION_NAMES[currentRegion];
+  const parks = latestData.parks.filter((p) =>
+    currentRegion === 'unknown' ? p.region === null : p.region === currentRegion
+  );
+  parks.sort((a, b) => {
+    if (a.maintenance !== b.maintenance) return a.maintenance ? 1 : -1;
+    const av = a.car === null || isNaN(a.car) ? -1 : a.car;
+    const bv = b.car === null || isNaN(b.car) ? -1 : b.car;
+    if (av !== bv) return bv - av;
+    return a.name.localeCompare(b.name, 'zh-Hant');
+  });
+  const rows = parks.map((p) => {
+    const enLine = p.en ? '<span class="park-en">' + escapeHtml(p.en) + '</span>' : '';
+    return '<tr class="park-row' + (p.maintenance ? ' maint' : '') + '">' +
+      '<td><span class="park-name">' + escapeHtml(p.name) + '</span>' + enLine + '</td>' +
+      '<td>' + badgeFor(p) + '</td></tr>';
+  });
+  $('park-rows').innerHTML = rows.length
+    ? rows.join('')
+    : '<tr><td colspan="2" style="text-align:center;color:#7b8aa0">此區域暫無停車場資料</td></tr>';
+  $('table-status').textContent = '更新於 ' + fmtTime(latestData.fetchedAt);
+}
+
+/* ---------- 数据加载与自动刷新 ---------- */
+async function loadAndRender() {
+  try {
+    latestData = await fetchParks();
+    if (currentView === 'view-regions') renderRegions();
+    if (currentView === 'view-table') renderTable();
+  } catch (e) {
+    showToast('無法取得資料，請檢查網絡後再試');
+  }
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  refreshTimer = setInterval(loadAndRender, REFRESH_MS);
+}
+function stopAutoRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = null;
+}
+
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 2500);
+}
+
+/* ---------- 事件绑定 ---------- */
+$('login-btn').addEventListener('click', () => {
+  if ($('code-input').value.trim() === ACCESS_CODE) {
+    localStorage.setItem(CODE_KEY, ACCESS_CODE);
+    $('login-error').classList.add('hidden');
+    enter();
+  } else {
+    $('login-error').classList.remove('hidden');
+    $('code-input').value = '';
+  }
+});
+
+$('code-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('login-btn').click();
+});
+
+document.querySelectorAll('.region-card').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    currentRegion = btn.dataset.region;
+    showView('view-table');
+    renderTable();
+  });
+});
+
+$('unknown-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  currentRegion = 'unknown';
+  showView('view-table');
+  renderTable();
+});
+
+$('back-btn').addEventListener('click', () => {
+  currentRegion = null;
+  showView('view-regions');
+  renderRegions();
+});
+
+$('refresh-btn').addEventListener('click', async () => {
+  const btn = $('refresh-btn');
+  btn.classList.add('spin');
+  try { localStorage.removeItem(CACHE_KEY); } catch (e) {}
+  await loadAndRender();
+  setTimeout(() => btn.classList.remove('spin'), 300);
+});
+
+$('logout-link').addEventListener('click', () => {
+  localStorage.removeItem(CODE_KEY);
+  stopAutoRefresh();
+  $('code-input').value = '';
+  showView('view-login');
+});
+
+function enter() {
+  showView('view-regions');
+  loadAndRender();
+  startAutoRefresh();
+}
+
+/* ---------- 启动 ---------- */
+if (localStorage.getItem(CODE_KEY) === ACCESS_CODE) {
+  enter();
+} else {
+  showView('view-login');
+}
+
+</script>
+</body>
+</html>
