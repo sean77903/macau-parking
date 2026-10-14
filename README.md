@@ -32,7 +32,7 @@ git push -u origin main
 
 ## 日常維護
 
-- **改家人密碼**：編輯 `index.html` 中 `const ACCESS_CODE = 'moka2026'`，重新推送
+- **改密碼**：編輯 `index.html` 中 `const ACCESS_CODE = ''`，重新推送
 - **政府新增停車場**：頁面會提示「未分類」；在 `index.html` 的 `REGIONS` 表按 ID 加一行 `"停車場ID":"macau|taipa|coloane"`，重新推送
 - 區域歸類約定：路氹城歸氹仔、石排灣歸路環，可按認知自行調整
 
