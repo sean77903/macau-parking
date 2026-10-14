@@ -26,7 +26,7 @@ git push -u origin main
 
 ## iPhone 上「變成 App」
 
-1. Safari 打開網址 → 輸入密碼 `moka2026` 進入
+1. Safari 打開網址 → 輸入密碼 ` 進入
 2. 分享 → **加入主畫面**
 3. 桌面出現「澳車位」圖示，點開即為全螢幕 App 形態
 
